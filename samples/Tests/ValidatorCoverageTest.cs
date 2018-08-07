@@ -10,19 +10,23 @@ namespace Tests
     [TestClass]
     public class ValidatorCoverageTest
     {
-        //In case of multiple controller assemblies or multiple validator assemblies
-        //just create N tests and specify one assembly pair in each or them
-
         [DataTestMethod]
         [FluentValidationDataSource(
-            typeof(AController), //Assembly that contain Controllers
-            typeof(AValidator), //Assembly that contain Validators
-
-            //ignored types
-            typeof(decimal),
-            typeof(DateTime),
-            typeof(Guid))
-        ]
+            controllerAssembly: new[]
+            {
+                typeof(AController), //controllers (N assemblies)
+            },
+            validatorAssembly: new[]
+            {
+                typeof(AValidator), //validators (N assemblies)
+            },
+            ignoreTypes: new[]
+            {
+                typeof(string),
+                typeof(decimal),
+                typeof(DateTime),
+                typeof(Guid),
+            })]
         public void EverythingIsCovered(FluentValidationTestContext ctx)
         {
             FluentValidationTestRunner.Check(ctx);

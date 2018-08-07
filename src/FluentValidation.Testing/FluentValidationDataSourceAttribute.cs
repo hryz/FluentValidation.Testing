@@ -12,8 +12,8 @@ namespace FluentValidation.Testing
     public class FluentValidationDataSourceAttribute : Attribute, ITestDataSource
     {
         private readonly Type[] _ignoreTypes;
-        private readonly Assembly _controllerAssembly;
-        private readonly Assembly _validatorAssembly;
+        private readonly Assembly[] _controllerAssembly;
+        private readonly Assembly[] _validatorAssembly;
 
         /// <summary>
         /// Provides a data set of all controller actions and validators for MSTest framework
@@ -21,11 +21,11 @@ namespace FluentValidation.Testing
         /// <param name="controllerAssembly">A type from the controller assembly</param>
         /// <param name="validatorAssembly">A type from the the validator assembly</param>
         /// <param name="ignoreTypes">types that do not require validation</param>
-        public FluentValidationDataSourceAttribute(Type controllerAssembly, Type validatorAssembly, params Type[] ignoreTypes)
+        public FluentValidationDataSourceAttribute(Type[] controllerAssembly, Type[] validatorAssembly, Type[] ignoreTypes)
         {
             _ignoreTypes = ignoreTypes;
-            _controllerAssembly = controllerAssembly.Assembly;
-            _validatorAssembly = validatorAssembly.Assembly;
+            _controllerAssembly = controllerAssembly.Select(x => x.Assembly).ToArray();
+            _validatorAssembly = validatorAssembly.Select(x => x.Assembly).ToArray();
         }
 
         public bool CheckPrimitiveTypes { get; set; } = false;
@@ -36,7 +36,7 @@ namespace FluentValidation.Testing
         public IEnumerable<object[]> GetData(MethodInfo methodInfo)
         {
             // AbstractValidator<T> where T : api model
-            var validatedTypes = _validatorAssembly.GetTypes()
+            var validatedTypes = _validatorAssembly.SelectMany(x => x.GetTypes())
                 .Where(t => typeof(IValidator).IsAssignableFrom(t) && t.BaseType != null && t.BaseType.IsGenericType)
                 .Select(v => v.BaseType?.GetGenericArguments()[0])
                 .ToList();
@@ -45,7 +45,7 @@ namespace FluentValidation.Testing
             bool IsService(ParameterInfo p) => p.CustomAttributes.Any(a => a.AttributeType == typeof(FromServicesAttribute));
 
             return _controllerAssembly
-                .GetTypes()
+                .SelectMany(x => x.GetTypes())
                 .Where(x => typeof(ControllerBase).IsAssignableFrom(x))
                 .SelectMany(c =>
                     c.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
